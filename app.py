@@ -231,65 +231,62 @@ def change_password():
 @app.route("/syncPodbeanData", methods=["GET"])
 # @jwt_required()
 def sync_podbean_data():
-    try:
-        auth = ("890c52f9d202851c9ba76", "6b61edbd548dda391f100")
-        data = {"grant_type": "client_credentials"}
+    auth = ("890c52f9d202851c9ba76", "6b61edbd548dda391f100")
+    data = {"grant_type": "client_credentials"}
 
-        r_token = requests.post(
-            "https://api.podbean.com/v1/oauth/token", auth=auth, json=data
+    r_token = requests.post(
+        "https://api.podbean.com/v1/oauth/token", auth=auth, json=data
+    )
+
+    token = r_token.json()["access_token"]
+
+    r_info = requests.get(
+        "https://api.podbean.com/v1/podcast", params={"access_token": token}
+    )
+
+    info = r_info.json()["podcast"]
+
+    PodcastInfo.query.delete()
+    Episode.query.delete()
+
+    db_info = PodcastInfo(
+        id=info["id"],
+        title=info["title"],
+        desc=info["desc"],
+        logo=info["logo"],
+        website=info["website"],
+    )
+    db.session.add(db_info)
+
+    r_episodes = requests.get(
+        "https://api.podbean.com/v1/episodes",
+        params={"access_token": token, "limit": 100},
+    )
+
+    db_episodes = r_episodes.json()["episodes"]
+
+    for item in db_episodes:
+        ep = Episode(
+            id=item["id"],
+            title=item["title"],
+            content=item["content"],
+            logo=item["logo"],
+            player_url=item["player_url"],
+            publish_time=item["publish_time"],
+            duration=item["duration"],
+            episode_number=item["episode_number"],
         )
+        db.session.add(ep)
 
-        token = r_token.json()["access_token"]
+    db.session.commit()
 
-        r_info = requests.get(
-            "https://api.podbean.com/v1/podcast", params={"access_token": token}
-        )
-
-        info = r_info.json()["podcast"]
-
-        PodcastInfo.query.delete()
-        Episode.query.delete()
-
-        db_info = PodcastInfo(
-            id=info["id"],
-            title=info["title"],
-            desc=info["desc"],
-            logo=info["logo"],
-            website=info["website"],
-        )
-        db.session.add(db_info)
-
-        r_episodes = requests.get(
-            "https://api.podbean.com/v1/episodes",
-            params={"access_token": token, "limit": 100},
-        )
-
-        db_episodes = r_episodes.json()["episodes"]
-
-        for item in db_episodes:
-            ep = Episode(
-                id=item["id"],
-                title=item["title"],
-                content=item["content"],
-                logo=item["logo"],
-                player_url=item["player_url"],
-                publish_time=item["publish_time"],
-                duration=item["duration"],
-                episode_number=item["episode_number"],
-            )
-            db.session.add(ep)
-
-        db.session.commit()
-
-        return success("OK")
-    except:
-        return error("Something went wrong, please try again later.", 500)
+    return success("OK")
 
 
 @app.route("/getPodcastInfo", methods=["GET"])
 def read_podcast_info():
     row = PodcastInfo.query.all()[0]
-    
+
     info = dict(row.__dict__)
     info.pop("_sa_instance_state", None)
 
@@ -314,7 +311,7 @@ def read_podcast_episode():
     id = request.args.get("id")
 
     row = Episode.query.filter_by(id=id).first()
-    
+
     if not row:
         return error("Episode not found", 404)
 
