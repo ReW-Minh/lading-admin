@@ -58,8 +58,9 @@ class Episode(db.Model):
     episode_number: Mapped[str]
 
 
-# configure the SQLite database, relative to the app instance folder
-app.config["SQLALCHEMY_DATABASE_URI"] = "sqlite:///rew.db"
+# configure the NeonDB database, relative to the app instance folder
+app.config["SQLALCHEMY_DATABASE_URI"] = "postgresql://rew_admin_owner:bWlqraV9Ls3D@ep-calm-sound-a5e2zc0r.us-east-2.aws.neon.tech/rew_admin?sslmode=require"
+app.config["SQLALCHEMY_TRACK_MODIFICATIONS"] = False
 # initialize the app with the extension
 db.init_app(app)
 
