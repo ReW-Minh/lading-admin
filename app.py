@@ -138,12 +138,9 @@ def register():
         return error("Username already exist", 400)
 
     # Register user
-    user = PodcastInfo(
-        id=username,
-        titke=generate_password_hash(password, method="pbkdf2"),
-        desc="",
-        logo="",
-        website="",
+    user = User(
+        username=username,
+        password=generate_password_hash(password, method="pbkdf2")
     )
     db.session.add(user)
     db.session.commit()
