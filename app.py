@@ -269,7 +269,7 @@ def sync_podbean_data():
             title=item["title"],
             content=item["content"],
             logo=item["logo"],
-            player_url=item["media_url"],
+            player_url=item["player_url"],
             publish_time=item["publish_time"],
             duration=item["duration"],
             episode_number=item["episode_number"],
