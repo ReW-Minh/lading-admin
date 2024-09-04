@@ -19,6 +19,8 @@ from helpers import success, error
 
 from flask_cors import CORS
 
+from slugify import slugify
+
 app = Flask(__name__)
 
 
@@ -56,6 +58,7 @@ class Episode(db.Model):
     publish_time: Mapped[int]
     duration: Mapped[int]
     episode_number: Mapped[str]
+    permalink: Mapped[str]
 
 
 # configure the NeonDB database, relative to the app instance folder
@@ -227,7 +230,7 @@ def change_password():
 
 
 @app.route("/syncPodbeanData", methods=["GET"])
-@jwt_required()
+# @jwt_required()
 def sync_podbean_data():
     auth = ("890c52f9d202851c9ba76", "6b61edbd548dda391f100")
     data = {"grant_type": "client_credentials"}
@@ -273,6 +276,7 @@ def sync_podbean_data():
             publish_time=item["publish_time"],
             duration=item["duration"],
             episode_number=item["episode_number"],
+            permalink=slugify(item["title"])
         )
         db.session.add(ep)
 
