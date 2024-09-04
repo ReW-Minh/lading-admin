@@ -230,7 +230,7 @@ def change_password():
 
 
 @app.route("/syncPodbeanData", methods=["GET"])
-# @jwt_required()
+@jwt_required()
 def sync_podbean_data():
     auth = ("890c52f9d202851c9ba76", "6b61edbd548dda391f100")
     data = {"grant_type": "client_credentials"}
@@ -310,9 +310,9 @@ def get_podcast_episodes():
 
 @app.route("/readPodcastEpisode", methods=["GET"])
 def read_podcast_episode():
-    id = request.args.get("id")
+    permalink = request.args.get("permalink")
 
-    row = Episode.query.filter_by(id=id).first()
+    row = Episode.query.filter_by(permalink=permalink).first()
 
     if not row:
         return error("Episode not found", 404)
