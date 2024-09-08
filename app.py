@@ -8,6 +8,8 @@ from flask_sqlalchemy import SQLAlchemy
 from sqlalchemy import select, update
 from sqlalchemy.orm import DeclarativeBase, Mapped, mapped_column
 
+from flask_migrate import Migrate
+
 from flask_jwt_extended import (
     create_access_token,
     current_user,
@@ -30,6 +32,7 @@ class Base(DeclarativeBase):
 
 
 db = SQLAlchemy(model_class=Base)
+migrate = Migrate(app, db)
 
 
 @dataclass
@@ -51,18 +54,20 @@ class PodcastInfo(db.Model):
 @dataclass
 class Episode(db.Model):
     id: Mapped[str] = mapped_column(primary_key=True, index=True)
-    title: Mapped[str]
-    content: Mapped[str]
-    logo: Mapped[str]
-    player_url: Mapped[str]
-    publish_time: Mapped[int]
-    duration: Mapped[int]
-    episode_number: Mapped[str]
-    permalink: Mapped[str]
+    title: Mapped[str] = mapped_column(nullable=True)
+    content: Mapped[str] = mapped_column(nullable=True)
+    logo: Mapped[str] = mapped_column(nullable=True)
+    player_url: Mapped[str] = mapped_column(nullable=True)
+    publish_time: Mapped[int] = mapped_column(nullable=True)
+    duration: Mapped[int] = mapped_column(nullable=True)
+    episode_number: Mapped[str] = mapped_column(nullable=True)
+    permalink: Mapped[str] = mapped_column(nullable=True)
 
 
 # configure the NeonDB database, relative to the app instance folder
-app.config["SQLALCHEMY_DATABASE_URI"] = "postgresql://rew_admin_owner:bWlqraV9Ls3D@ep-calm-sound-a5e2zc0r.us-east-2.aws.neon.tech/rew_admin?sslmode=require"
+app.config["SQLALCHEMY_DATABASE_URI"] = (
+    "postgresql://rew_admin_owner:bWlqraV9Ls3D@ep-calm-sound-a5e2zc0r.us-east-2.aws.neon.tech/rew_admin?sslmode=require"
+)
 app.config["SQLALCHEMY_TRACK_MODIFICATIONS"] = False
 # initialize the app with the extension
 db.init_app(app)
@@ -142,8 +147,7 @@ def register():
 
     # Register user
     user = User(
-        username=username,
-        password=generate_password_hash(password, method="pbkdf2")
+        username=username, password=generate_password_hash(password, method="pbkdf2")
     )
     db.session.add(user)
     db.session.commit()
@@ -267,18 +271,19 @@ def sync_podbean_data():
     db_episodes = r_episodes.json()["episodes"]
 
     for item in db_episodes:
-        ep = Episode(
-            id=item["id"],
-            title=item["title"],
-            content=item["content"],
-            logo=item["logo"],
-            player_url=item["player_url"],
-            publish_time=item["publish_time"],
-            duration=item["duration"],
-            episode_number=item["episode_number"],
-            permalink=slugify(item["title"])
-        )
-        db.session.add(ep)
+        if item["player_url"]:
+            ep = Episode(
+                id=item["id"],
+                title=item["title"],
+                content=item["content"],
+                logo=item["logo"],
+                player_url=item["player_url"],
+                publish_time=item["publish_time"],
+                duration=item["duration"],
+                episode_number=item["episode_number"],
+                permalink=slugify(item["title"]),
+            )
+            db.session.add(ep)
 
     db.session.commit()
 
@@ -297,15 +302,23 @@ def read_podcast_info():
 
 @app.route("/getPodcastEpisodes", methods=["GET"])
 def get_podcast_episodes():
-    rows = Episode.query.all()
+    page = request.args.get("page", type=int)
+    per_page = request.args.get("per_page", type=int)
+
+    if not page or not per_page:
+        return error("Missing required parameters", 400)
+
+    rows = Episode.query.order_by(Episode.publish_time.desc()).paginate(
+        page=page, per_page=per_page, error_out=False
+    )
 
     result = []
-    for item in rows:
+    for item in rows.items:
         ep = dict(item.__dict__)
         ep.pop("_sa_instance_state", None)
         result.append(ep)
 
-    return success("OK", result)
+    return success("OK", {"episodes": result, "total": rows.total})
 
 
 @app.route("/readPodcastEpisode", methods=["GET"])
