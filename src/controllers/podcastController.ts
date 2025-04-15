@@ -4,6 +4,7 @@ import { Request, Response } from 'express';
 import { error, success } from '../utils';
 import { deleteCacheByPattern, getCache, setCache } from '../utils/cache';
 import { PrismaClient, episode } from '@prisma/client';
+import redisClient from '@/config/redis'
 
 const prisma = new PrismaClient();
 
@@ -209,3 +210,11 @@ export const readPodcastEpisode = async (req: Request, res: Response) => {
         return error(res, 'Server error retrieving podcast episode', 500); //
     }
 };
+
+export const healthCheck = async (_: Request, res: Response) => {
+    const data = {
+        status: 'healthy',
+        redis: redisClient.status
+    }
+    return success(res, 'OK', data);
+}
