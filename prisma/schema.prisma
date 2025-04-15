@@ -1,0 +1,57 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model alembic_version {
+  version_num String @id(map: "alembic_version_pkc") @db.VarChar(32)
+}
+
+model blog {
+  id           Int     @id @default(autoincrement())
+  author       String  @db.VarChar
+  route        String  @unique @db.VarChar
+  content      String
+  created_time Int
+  publish_time Int?
+  is_published Boolean
+  title        String  @db.VarChar
+
+  @@index([id], map: "ix_blog_id")
+}
+
+model episode {
+  id             String  @id @db.VarChar
+  title          String? @db.VarChar
+  content        String? @db.VarChar
+  logo           String? @db.VarChar
+  player_url     String? @db.VarChar
+  publish_time   Int?
+  duration       Int?
+  episode_number String? @db.VarChar
+  permalink      String? @db.VarChar(500)
+
+  @@index([id], map: "ix_episode_id")
+}
+
+model podcast_info {
+  id      String @id @db.VarChar
+  title   String @db.VarChar
+  desc    String @db.VarChar
+  logo    String @db.VarChar
+  website String @db.VarChar
+
+  @@index([id], map: "ix_podcast_info_id")
+}
+
+model user {
+  id       Int    @id @default(autoincrement())
+  username String @unique @db.VarChar
+  password String @db.VarChar
+
+  @@index([id], map: "ix_user_id")
+}
