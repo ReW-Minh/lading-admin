@@ -4,7 +4,7 @@ import { Request, Response } from 'express';
 import { error, success } from '../utils';
 import { deleteCacheByPattern, getCache, setCache } from '../utils/cache';
 import { PrismaClient, episode } from '@prisma/client';
-import redisClient from '@/config/redis'
+import redisClient from '../config/redis'
 
 const prisma = new PrismaClient();
 
